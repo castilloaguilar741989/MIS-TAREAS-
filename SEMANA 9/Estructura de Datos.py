@@ -1,158 +1,142 @@
-# Clase Producto representa cada producto en el inventario.
-class Producto:
-    def __init__(self, ID, nombre, cantidad, precio):
-        # Inicializa los atributos de un producto.
-        self.ID = ID
+# Clase Libro
+class Libro:
+    def _init_(self, titulo, autor, categoria, isbn):
+        self.titulo_autor = (titulo, autor)  # Tupla para almacenar título y autor como inmutables
+        self.categoria = categoria
+        self.isbn = isbn
+
+    def _str_(self):
+        return f"'{self.titulo_autor[0]}' de {self.titulo_autor[1]} (Categoría: {self.categoria}, ISBN: {self.isbn})"
+
+
+# Clase Usuario
+class Usuario:
+    def _init_(self, nombre, id_usuario):
         self.nombre = nombre
-        self.cantidad = cantidad
-        self.precio = precio
+        self.id_usuario = id_usuario
+        self.libros_prestados = []  # Lista para gestionar libros prestados
 
-    # Métodos getters para obtener los atributos del producto.
-    def get_id(self):
-        return self.ID
-
-    def get_nombre(self):
-        return self.nombre
-
-    def get_cantidad(self):
-        return self.cantidad
-
-    def get_precio(self):
-        return self.precio
-
-    # Métodos setters para actualizar los atributos del producto.
-    def set_nombre(self, nombre):
-        self.nombre = nombre
-
-    def set_cantidad(self, cantidad):
-        self.cantidad = cantidad
-
-    def set_precio(self, precio):
-        self.precio = precio
-
-    # Método para representar un producto como una cadena de texto.
-    def __str__(self):
-        return f"ID: {self.ID}, Nombre: {self.nombre}, Cantidad: {self.cantidad}, Precio: ${self.precio:.2f}"
+    def _str_(self):
+        return f"Usuario: {self.nombre}, ID: {self.id_usuario}, Libros prestados: {len(self.libros_prestados)}"
 
 
-# Clase Inventario gestiona la lista de productos.
-class Inventario:
-    def __init__(self):
-        # Inicializa la lista de productos y agrega algunos productos iniciales.
-        self.productos = []
-        self.añadir_producto(Producto("001", "Manzanas", 50, 0.30))
-        self.añadir_producto(Producto("002", "Plátanos", 100, 0.25))
-        self.añadir_producto(Producto("003", "Naranjas", 80, 0.40))
+# Clase Biblioteca
+class Biblioteca:
+    def _init_(self):
+        self.libros_disponibles = {}  # Diccionario para almacenar libros (ISBN como clave)
+        self.usuarios = {}  # Diccionario para almacenar usuarios con el ID como clave
+        self.historial_prestamos = {}  # Diccionario para llevar historial de préstamos
 
-    # Método para añadir un nuevo producto al inventario.
-    def añadir_producto(self, producto):
-        # Verifica que el ID del producto sea único antes de añadirlo.
-        for p in self.productos:
-            if p.get_id() == producto.get_id():
-                print(f"Error: Ya existe un producto con el ID {producto.get_id()}.")
-                return
-        self.productos.append(producto)
-        print(f"Producto {producto.get_nombre()} añadido exitosamente.")
+    def añadir_libro(self, libro):
+        if libro.isbn not in self.libros_disponibles:
+            self.libros_disponibles[libro.isbn] = libro
+            print(f"Libro añadido: {libro}")
+        else:
+            print(f"El libro con ISBN {libro.isbn} ya está en la biblioteca.")
 
-    # Método para eliminar un producto por su ID.
-    def eliminar_producto(self, ID):
-        # Busca el producto por ID y lo elimina de la lista.
-        for producto in self.productos:
-            if producto.get_id() == ID:
-                self.productos.remove(producto)
-                print(f"Producto con ID {ID} eliminado.")
-                return
-        print(f"No se encontró ningún producto con el ID {ID}.")
+    def quitar_libro(self, isbn):
+        if isbn in self.libros_disponibles:
+            libro = self.libros_disponibles.pop(isbn)
+            print(f"Libro eliminado: {libro}")
+        else:
+            print(f"No se encontró el libro con ISBN {isbn}.")
 
-    # Método para actualizar la cantidad o el precio de un producto por su ID.
-    def actualizar_producto(self, ID, cantidad=None, precio=None):
-        # Busca el producto por ID y actualiza la cantidad y/o precio.
-        for producto in self.productos:
-            if producto.get_id() == ID:
-                if cantidad is not None:
-                    producto.set_cantidad(cantidad)
-                if precio is not None:
-                    producto.set_precio(precio)
-                print(f"Producto con ID {ID} actualizado.")
-                return
-        print(f"No se encontró ningún producto con el ID {ID}.")
+    def registrar_usuario(self, usuario):
+        if usuario.id_usuario not in self.usuarios:
+            self.usuarios[usuario.id_usuario] = usuario
+            self.historial_prestamos[usuario.id_usuario] = []
+            print(f"Usuario registrado: {usuario}")
+        else:
+            print(f"El usuario con ID {usuario.id_usuario} ya está registrado.")
 
-    # Método para buscar productos por su nombre.
-    def buscar_producto(self, nombre):
-        # Realiza una búsqueda parcial por nombre (case-insensitive).
-        resultados = [p for p in self.productos if nombre.lower() in p.get_nombre().lower()]
+    def dar_de_baja_usuario(self, id_usuario):
+        if id_usuario in self.usuarios:
+            del self.usuarios[id_usuario]
+            del self.historial_prestamos[id_usuario]
+            print(f"Usuario con ID {id_usuario} dado de baja.")
+        else:
+            print(f"No se encontró el usuario con ID {id_usuario}.")
+
+    def prestar_libro(self, id_usuario, isbn):
+        if id_usuario in self.usuarios and isbn in self.libros_disponibles:
+            usuario = self.usuarios[id_usuario]
+            libro = self.libros_disponibles.pop(isbn)
+            usuario.libros_prestados.append(libro)
+            self.historial_prestamos[id_usuario].append(libro)
+            print(f"Libro prestado: {libro} al usuario {id_usuario}")
+        else:
+            print(f"Error al prestar el libro con ISBN {isbn} al usuario {id_usuario}.")
+
+    def devolver_libro(self, id_usuario, isbn):
+        if id_usuario in self.usuarios and id_usuario in self.historial_prestamos:
+            usuario = self.usuarios[id_usuario]
+            libro = next((lib for lib in usuario.libros_prestados if lib.isbn == isbn), None)
+            if libro:
+                usuario.libros_prestados.remove(libro)
+                self.libros_disponibles[isbn] = libro
+                self.historial_prestamos[id_usuario].remove(libro)
+                print(f"Libro devuelto: {libro} por el usuario {id_usuario}")
+            else:
+                print(f"El usuario no tiene prestado el libro con ISBN {isbn}.")
+        else:
+            print(f"Error al devolver el libro con ISBN {isbn} por el usuario {id_usuario}.")
+
+    def buscar_libro(self, filtro, valor):
+        resultados = []
+        for libro in self.libros_disponibles.values():
+            if filtro == "titulo" and valor.lower() in libro.titulo_autor[0].lower():
+                resultados.append(libro)
+            elif filtro == "autor" and valor.lower() in libro.titulo_autor[1].lower():
+                resultados.append(libro)
+            elif filtro == "categoria" and valor.lower() == libro.categoria.lower():
+                resultados.append(libro)
+
         if resultados:
-            print(f"Productos encontrados con el nombre '{nombre}':")
-            for producto in resultados:
-                print(producto)
+            print(f"Resultados de búsqueda ({filtro}='{valor}'): ")
+            for libro in resultados:
+                print(libro)
         else:
-            print(f"No se encontraron productos con el nombre '{nombre}'.")
+            print(f"No se encontraron libros para el {filtro}='{valor}'.")
 
-    # Método para mostrar todos los productos en el inventario.
-    def mostrar_productos(self):
-        # Imprime todos los productos en el inventario.
-        if not self.productos:
-            print("No hay productos en el inventario.")
+    def listar_libros_prestados(self, id_usuario):
+        if id_usuario in self.historial_prestamos:
+            libros = self.historial_prestamos[id_usuario]
+            if libros:
+                print(f"Libros prestados por el usuario {id_usuario}:")
+                for libro in libros:
+                    print(libro)
+            else:
+                print(f"El usuario {id_usuario} no tiene libros prestados.")
         else:
-            print("Productos en inventario:")
-            for producto in self.productos:
-                print(producto)
+            print(f"No se encontró historial de préstamos para el usuario {id_usuario}.")
 
 
-# Función que define el menú de la interfaz de usuario.
-def menu():
-    inventario = Inventario()
+# Ejemplo de uso
+biblioteca = Biblioteca()
 
-    while True:
-        # Menú de opciones para el usuario.
-        print("\n--- Menú de Gestión de Inventario ---")
-        print("1. Añadir nuevo producto")
-        print("2. Eliminar producto por ID")
-        print("3. Actualizar cantidad o precio de un producto por ID")
-        print("4. Buscar productos por nombre")
-        print("5. Mostrar todos los productos")
-        print("6. Salir")
+# Crear libros
+libro1 = Libro("Cien años de soledad", "Gabriel García Márquez", "Novela", "1234567890")
+libro2 = Libro("El Principito", "Antoine de Saint-Exupéry", "Fábula", "0987654321")
 
-        opcion = input("Selecciona una opción: ")
+# Añadir libros a la biblioteca
+biblioteca.añadir_libro(libro1)
+biblioteca.añadir_libro(libro2)
 
-        # Opciones del menú y acciones correspondientes.
-        if opcion == "1":
-            ID = input("Ingresa el ID del producto: ")
-            nombre = input("Ingresa el nombre del producto: ")
-            cantidad = int(input("Ingresa la cantidad del producto: "))
-            precio = float(input("Ingresa el precio del producto: "))
-            producto = Producto(ID, nombre, cantidad, precio)
-            inventario.añadir_producto(producto)
+# Registrar usuarios
+usuario1 = Usuario("Carmen", "001")
+biblioteca.registrar_usuario(usuario1)
 
-        elif opcion == "2":
-            ID = input("Ingresa el ID del producto a eliminar: ")
-            inventario.eliminar_producto(ID)
+# Prestar libros
+biblioteca.prestar_libro("001", "1234567890")
 
-        elif opcion == "3":
-            ID = input("Ingresa el ID del producto a actualizar: ")
-            cantidad = input("Ingresa la nueva cantidad (o presiona Enter para omitir): ")
-            precio = input("Ingresa el nuevo precio (o presiona Enter para omitir): ")
-            cantidad = int(cantidad) if cantidad else None
-            precio = float(precio) if precio else None
-            inventario.actualizar_producto(ID, cantidad, precio)
+# Listar libros prestados por un usuario
+biblioteca.listar_libros_prestados("001")
 
-        elif opcion == "4":
-            nombre = input("Ingresa el nombre del producto a buscar: ")
-            inventario.buscar_producto(nombre)
+# Buscar libros por título
+biblioteca.buscar_libro("titulo", "principito")
 
-        elif opcion == "5":
-            inventario.mostrar_productos()
+# Devolver libro
+biblioteca.devolver_libro("001", "1234567890")
 
-        elif opcion == "6":
-            # Opción para salir del programa.
-            print("Saliendo del sistema. ¡Hasta luego!")
-            break
-
-        else:
-            print("Opción no válida. Intenta de nuevo.")
-
-
-# Punto de entrada principal del programa.
-if __name__ == "__main__":
-    # Inicia el menú interactivo.
-    menu()
+# Listar libros prestados después de la devolución
+biblioteca.listar_libros_prestados("001")
